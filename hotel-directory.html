@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Registered Hotels & Donors - FoodBridge</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#006a40",
+                        "surface": "#fbf9f8",
+                        "on-surface": "#1b1c1c",
+                        "on-surface-variant": "#3f4941",
+                        "outline-variant": "#bec9bf",
+                        "surface-container-lowest": "#ffffff"
+                    }
+                }
+            }
+        }
+    </script>
+<style> body { font-family: 'Manrope', sans-serif; } </style>
+</head>
+<body class="bg-background dark:bg-[#121212] text-on-background dark:text-[#f2f0f0] antialiased flex flex-col min-h-screen pt-16 transition-colors duration-200">
+
+<nav class="fixed top-0 left-0 w-full z-50 px-4 md:px-6 max-w-[1280px] mx-auto shadow-sm bg-surface dark:bg-[#1a1a1a]">
+    <div class="w-full h-16 flex items-center justify-between">
+        <a class="text-2xl font-bold text-primary" href="Homepage.html">FoodBridge</a>
+        <div class="flex items-center gap-3">
+            <a class="bg-surface-container-high dark:bg-gray-800 text-on-surface dark:text-white px-4 py-2 rounded-lg text-sm font-semibold" href="Homepage.html">Back to Home</a>
+        </div>
+    </div>
+</nav>
+
+<main class="flex-grow flex flex-col items-center w-full px-4 md:px-6 max-w-[1280px] mx-auto py-12 gap-8">
+    <div class="text-center max-w-2xl">
+        <span class="text-primary font-bold text-sm uppercase tracking-wider">Verified Network</span>
+        <h1 class="text-4xl font-bold text-on-surface dark:text-white mt-2 mb-4">Registered Hotels & Donors</h1>
+        <p class="text-on-surface-variant dark:text-gray-300">Browse active surplus listings from verified hotels, restaurants, and food partners ready for immediate claim.</p>
+    </div>
+
+    <!-- Dynamic Directory Grid Container -->
+    <div id="donations-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+        <!-- Listings will be loaded here dynamically from Supabase -->
+        <p class="text-on-surface-variant dark:text-gray-400 col-span-full text-center py-8">Loading available food listings from database...</p>
+    </div>
+</main>
+
+<footer class="w-full py-8 bg-surface-container-high dark:bg-[#161616] flex justify-between items-center px-6 mt-auto">
+    <span class="text-sm font-bold text-primary">FoodBridge</span>
+    <span class="text-sm text-on-surface-variant dark:text-gray-400">© 2026 FoodBridge. All rights reserved.</span>
+</footer>
+
+<script>
+    async function loadDonations() {
+        const grid = document.getElementById('donations-grid');
+        try {
+            const response = await fetch('http://localhost:3000/api/donations');
+            const result = await response.json();
+
+            if (response.ok && result.donations) {
+                if (result.donations.length === 0) {
+                    grid.innerHTML = `<p class="text-on-surface-variant dark:text-gray-400 col-span-full text-center py-8">No active food listings found right now. Check back soon!</p>`;
+                    return;
+                }
+
+                grid.innerHTML = ''; // Clear loading text
+                result.donations.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = "bg-surface-container-lowest dark:bg-[#1e1e1e] p-6 rounded-xl border border-outline-variant dark:border-gray-800 shadow-sm flex flex-col justify-between gap-4";
+                    card.innerHTML = `
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="text-xl font-bold text-on-surface dark:text-white">${escapeHtml(item.donor_name)}</h3>
+                                <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-xs font-semibold">Verified Donor</span>
+                            </div>
+                            <p class="text-sm text-on-surface-variant dark:text-gray-300 mb-4"><strong>Category:</strong> ${escapeHtml(item.category)}</p>
+                            <div class="space-y-1 text-sm text-on-surface-variant dark:text-gray-400">
+                                <p><strong>Quantity:</strong> ${escapeHtml(item.quantity)}</p>
+                                <p><strong>Contact Email:</strong> ${escapeHtml(item.email)}</p>
+                                <p><strong>Phone:</strong> ${escapeHtml(item.phone)}</p>
+                                <p class="mt-2"><strong>Notes/Address:</strong> ${escapeHtml(item.notes)}</p>
+                            </div>
+                        </div>
+                        <button onclick="alert('Claim request initiated for ${escapeHtml(item.donor_name)}! The donor will be contacted.')" class="w-full bg-primary text-white py-2.5 rounded-lg font-semibold hover:opacity-90 transition-opacity">
+                            Claim Donation
+                        </button>
+                    `;
+                    grid.appendChild(card);
+                });
+            } else {
+                grid.innerHTML = `<p class="text-error col-span-full text-center py-8">Failed to load listings from database.</p>`;
+            }
+        } catch (err) {
+            console.error(err);
+            grid.innerHTML = `<p class="text-error col-span-full text-center py-8">Could not connect to backend server. Make sure "node server.js" is running!</p>`;
+        }
+    }
+
+    // Helper to prevent HTML injection
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
+        loadDonations();
+    });
+</script>
+</body>
+</html>
